@@ -1,0 +1,4 @@
+(executable
+ (public_name fpp_personal_parsers)
+ (name main)
+ (libraries fpp))
