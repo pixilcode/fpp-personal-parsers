@@ -19,6 +19,7 @@ module type Idx = sig
 end
 
 module type S = sig
+  (* types *)
   type index
 
   type cached_value
@@ -35,6 +36,16 @@ module type S = sig
 
   type 'a parser = index * 'a parser_callback -> state_transformer
 
+  (* basic parser combinators *)
+  val nothing : 'a parser
+
+  val unit : 'a -> 'a parser
+
+  val sequence : 'a parser -> ('a -> 'b parser) -> 'b parser
+
+  val choice : 'a parser -> 'a parser -> 'a parser
+
+  (* fixed-point parsing functions *)
   val memo : tag -> cached_value parser -> cached_value parser
 
   val run : 'a parser -> string -> 'a list
@@ -47,6 +58,7 @@ end
 
 module Make (C : CacheValue) (I : Idx) :
   S with type index := I.t and type cached_value := C.t = struct
+  (* types *)
   type index = I.t
 
   type cached_value = C.t
@@ -99,6 +111,26 @@ module Make (C : CacheValue) (I : Idx) :
 
   type 'a parser = index * 'a parser_callback -> state_transformer
 
+  (* basic parser combinators *)
+  let nothing : 'a parser = fun _ -> fun state -> state
+
+  let unit (value : 'a) : 'a parser =
+   fun (idx, callback) -> callback (value, idx)
+
+  let sequence (parser : 'a parser) (f : 'a -> 'b parser) : 'b parser =
+   fun (idx, callback) ->
+    let next_callback =
+     fun (value, idx) ->
+      let next_parser = f value in
+      next_parser (idx, callback)
+    in
+    parser (idx, next_callback)
+
+  let choice (parser1 : 'a parser) (parser2 : 'a parser) : 'a parser =
+   fun (idx, callback) ->
+    fun state -> state |> parser1 (idx, callback) |> parser2 (idx, callback)
+
+  (* fixed-point parsing functions *)
   let memo (tag : tag) (parser : cached_value parser) : cached_value parser =
    fun (idx, callback) ->
     let loc : parser_position = (tag, idx) in
