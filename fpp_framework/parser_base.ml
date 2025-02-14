@@ -9,34 +9,34 @@ end
 module type Idx = sig
   type t
 
+  type source
+
   include Set.Elt with type t := t
 
   include Hashable.S with type t := t
 
   val is_at_end : t -> bool
 
-  val create_from_string : string -> t
+  val create_from_source : source -> t
 end
 
 module type S = sig
   (* types *)
   module Idx : Idx
 
-  type index
-
   type cached_value
 
   type tag = string
 
-  type parser_position = tag * index
+  type parser_position = tag * Idx.t
 
-  type 'a parser_output = 'a * index
+  type 'a parser_output = 'a * Idx.t
 
   type 'a parser_callback = 'a parser_output -> state_transformer
 
   and state_transformer
 
-  type 'a parser = index * 'a parser_callback -> state_transformer
+  type 'a parser = Idx.t * 'a parser_callback -> state_transformer
 
   (* basic parser combinators *)
   val nothing : 'a parser
@@ -50,26 +50,24 @@ module type S = sig
   (* fixed-point parsing functions *)
   val memo : tag:tag -> cached_value parser -> cached_value parser
 
-  val run : 'a parser -> string -> 'a list
+  val run : 'a parser -> Idx.source -> 'a list
 
   val run_raw :
        'a parser
-    -> string
+    -> Idx.source
     -> (parser_position, cached_value parser_output list) Hashtbl.t
 end
 
 module Make (C : CacheValue) (I : Idx) :
-  S with type index := I.t and type cached_value := C.t = struct
+  S with module Idx := I and type cached_value := C.t = struct
   (* types *)
   module Idx = I
-
-  type index = I.t
 
   type cached_value = C.t
 
   type tag = string
 
-  type parser_position = tag * index
+  type parser_position = tag * Idx.t
 
   module Parser_position = struct
     type t = parser_position
@@ -82,7 +80,7 @@ module Make (C : CacheValue) (I : Idx) :
     let hash (tag, idx) = Hashtbl.hash (tag, I.hash idx)
   end
 
-  type 'a parser_output = 'a * index
+  type 'a parser_output = 'a * Idx.t
 
   module CachedParserOutput = struct
     type t = cached_value parser_output
@@ -113,7 +111,7 @@ module Make (C : CacheValue) (I : Idx) :
 
   and state_transformer = state -> state
 
-  type 'a parser = index * 'a parser_callback -> state_transformer
+  type 'a parser = Idx.t * 'a parser_callback -> state_transformer
 
   (* basic parser combinators *)
   let nothing : 'a parser = fun _ -> fun state -> state
@@ -173,14 +171,14 @@ module Make (C : CacheValue) (I : Idx) :
             ~data:(CachedParserOutputSet.empty, [callback]) ;
           parser (idx, new_callback) (State state)
 
-  let run (parser : 'a parser) (input : string) : 'a list =
+  let run (parser : 'a parser) (input : Idx.source) : 'a list =
     let results = ref [] in
-    let index = I.create_from_string input in
+    let index = I.create_from_source input in
     let callback =
      fun (value, idx) ->
       (* If the index is at the end of the string, then it is a valid parse,
            so we add it to the results. *)
-      if I.is_at_end idx then results := value :: !results ;
+      if Idx.is_at_end idx then results := value :: !results ;
       (* Either way, leave the state unmodified *)
       fun state -> state
     in
@@ -188,9 +186,9 @@ module Make (C : CacheValue) (I : Idx) :
     ignore (parser (index, callback) initial_state) ;
     !results
 
-  let run_raw (parser : 'a parser) (input : string) :
+  let run_raw (parser : 'a parser) (input : Idx.source) :
       (parser_position, cached_value parser_output list) Hashtbl.t =
-    let index = I.create_from_string input in
+    let index = I.create_from_source input in
     let callback = fun (_value, _idx) -> fun state -> state in
     let initial_state = State (Hashtbl.create (module Parser_position)) in
     let (State final_state) = parser (index, callback) initial_state in
