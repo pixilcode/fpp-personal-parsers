@@ -1,7 +1,59 @@
 open! Core
 
-module Make (P : Parser_base.S) = struct
+module type S = sig
+  type 'a parser
+
+  val fail : 'a parser
+
+  val map : 'a parser -> f:('a -> 'b) -> 'b parser
+
+  val preceded : 'a parser -> 'b parser -> 'b parser
+
+  val terminated : 'a parser -> 'b parser -> 'a parser
+
+  val delimited : 'a parser -> 'b parser -> 'c parser -> 'b parser
+
+  val opt : 'a parser -> 'a option parser
+
+  val pair : 'a parser -> 'b parser -> ('a * 'b) parser
+
+  val separated_pair : 'a parser -> 'b parser -> 'c parser -> ('a * 'c) parser
+
+  val run_if : cond:bool -> 'a parser -> 'a parser
+
+  val run_if_else : cond:bool -> 'a parser -> 'a parser -> 'a parser
+
+  val verify : 'a parser -> f:('a -> bool) -> 'a parser
+
+  val any_of : 'a parser list -> 'a parser
+
+  val sequence_opt : 'a option parser -> f:('a -> 'b parser) -> 'b option parser
+
+  val end_of_input : unit parser
+
+  val skip_forward : int -> unit parser
+
+  val many : 'a parser -> 'a list parser
+
+  module Infix_ops : sig
+    val ( >>= ) : 'a parser -> ('a -> 'b parser) -> 'b parser
+
+    val ( >>| ) : 'a parser -> ('a -> 'b) -> 'b parser
+
+    val ( >>* ) : 'a parser -> 'b parser -> 'b parser
+
+    val ( *>> ) : 'a parser -> 'b parser -> 'a parser
+
+    val ( <|> ) : 'a parser -> 'a parser -> 'a parser
+
+    val ( <&> ) : 'a parser -> 'b parser -> ('a * 'b) parser
+  end
+end
+
+module Make (P : Parser_base.S) : S with type 'a parser = 'a P.parser = struct
   open P
+
+  type 'a parser = 'a P.parser
 
   let fail = nothing
 
@@ -46,6 +98,26 @@ module Make (P : Parser_base.S) = struct
       'b option parser =
     sequence parser ~f:(fun v ->
         match v with Some v -> map (f v) ~f:Option.some | None -> unit None )
+
+  let end_of_input : unit parser =
+   fun (idx, callback) ->
+    if Idx.is_at_end idx then callback ((), idx) else no_state_change
+
+  let skip_forward (n : int) : unit parser =
+   fun (idx, callback) ->
+    let rec skip_n idx n =
+      if n = 0 then idx
+      else
+        let idx' = Idx.next idx in
+        skip_n idx' (n - 1)
+    in
+    callback ((), skip_n idx n)
+
+  let many (parser : 'a parser) : 'a list parser =
+    let rec many' (acc : 'a list) : 'a list parser =
+      choice (sequence parser ~f:(fun v -> many' (v :: acc))) (unit acc)
+    in
+    map (many' []) ~f:List.rev
 
   module Infix_ops = struct
     let ( >>= ) parser f = sequence parser ~f
