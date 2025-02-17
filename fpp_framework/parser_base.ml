@@ -9,11 +9,17 @@ end
 module type Idx = sig
   type t
 
+  (** [source] is the type that this index is built from. The most basic
+      source type would be a [string]. However, this abstraction allows indices
+      to be built from an input channel, a collection of bytes, or even an array
+      of tokens. *)
   type source
 
   include Set.Elt with type t := t
 
   include Hashable.S with type t := t
+
+  val next : t -> t
 
   val is_at_end : t -> bool
 
@@ -48,6 +54,8 @@ module type S = sig
   val choice : 'a parser -> 'a parser -> 'a parser
 
   (* fixed-point parsing functions *)
+  val no_state_change : state_transformer
+
   val memo : tag:tag -> cached_value parser -> cached_value parser
 
   val run : 'a parser -> Idx.source -> 'a list
@@ -133,6 +141,8 @@ module Make (C : CacheValue) (I : Idx) :
     fun state -> state |> parser1 (idx, callback) |> parser2 (idx, callback)
 
   (* fixed-point parsing functions *)
+  let no_state_change : state_transformer = fun state -> state
+
   let memo ~(tag : tag) (parser : cached_value parser) : cached_value parser =
    fun (idx, callback) ->
     let loc : parser_position = (tag, idx) in
