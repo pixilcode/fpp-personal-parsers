@@ -1,2 +1,3 @@
 (test
- (name test_fpp_personal_parsers))
+ (name test_fpp_framework)
+ (libraries core fpp ounit2))

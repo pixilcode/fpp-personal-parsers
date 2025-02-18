@@ -13,7 +13,8 @@
 
 (package
  (name fpp_personal_parsers)
- (synopsis "A set of personal parsers that use the fixed-point parsing framework")
- (depends ocaml core))
+ (synopsis
+  "A set of personal parsers that use the fixed-point parsing framework")
+ (depends ocaml core ounit2))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/reference/dune-project/index.html
