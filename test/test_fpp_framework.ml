@@ -76,6 +76,14 @@ let int_list_printer = List.to_string ~f:Int.to_string
 let opt_int_list_printer =
   List.to_string ~f:(Option.value_map ~default:"None" ~f:Int.to_string)
 
+let int_pair_list_printer =
+  List.to_string ~f:(fun (a, b) -> Printf.sprintf "(%d, %d)" a b)
+
+let unit_list_printer = List.to_string ~f:(fun () -> "()")
+
+let char_list_list_printer =
+  List.to_string ~f:(List.to_string ~f:Char.to_string)
+
 module Test_base = struct
   open OUnit2
 
@@ -180,6 +188,142 @@ module Test_combinators = struct
     let result = Parser_base.run parser "" in
     assert_equal [None] result ~printer:opt_int_list_printer
 
+  let pair_test =
+    "pair"
+    >:: fun _ ->
+    (* parse two parsers in sequence and return a tuple of the results *)
+    let parser = Combinators.pair (Parser_base.unit 1) (Parser_base.unit 2) in
+    let result = Parser_base.run parser "" in
+    assert_equal [(1, 2)] result ~printer:int_pair_list_printer
+
+  let separated_pair_test =
+    "separated_pair"
+    >:: fun _ ->
+    (* parse three parsers in sequence and return a tuple of the first and third *)
+    let parser =
+      Combinators.separated_pair (Parser_base.unit 1)
+        (Parser_base.unit "ignored")
+        (Parser_base.unit 2)
+    in
+    let result = Parser_base.run parser "" in
+    assert_equal [(1, 2)] result ~printer:int_pair_list_printer
+
+  let run_if_else_test =
+    "run_if_else"
+    >:: fun _ ->
+    (* run a parser if a condition is true, otherwise run another parser *)
+    let parser =
+      Combinators.run_if_else ~cond:true (Parser_base.unit 1)
+        (Parser_base.unit 2)
+    in
+    let result = Parser_base.run parser "" in
+    assert_equal [1] result ~printer:int_list_printer ;
+    (* run a parser if a condition is false, otherwise run another parser *)
+    let parser =
+      Combinators.run_if_else ~cond:false (Parser_base.unit 1)
+        (Parser_base.unit 2)
+    in
+    let result = Parser_base.run parser "" in
+    assert_equal [2] result ~printer:int_list_printer
+
+  let run_if_test =
+    "run_if"
+    >:: fun _ ->
+    (* run a parser if a condition is true *)
+    let parser = Combinators.run_if ~cond:true (Parser_base.unit 1) in
+    let result = Parser_base.run parser "" in
+    assert_equal [1] result ~printer:int_list_printer ;
+    (* don't run a parser if a condition is false *)
+    let parser = Combinators.run_if ~cond:false (Parser_base.unit 1) in
+    let result = Parser_base.run parser "" in
+    assert_equal [] result ~printer:int_list_printer
+
+  let verify_test =
+    "verify"
+    >:: fun _ ->
+    (* run a parser and return the result if it satisfies a predicate *)
+    let parser = Combinators.verify (Parser_base.unit 1) ~f:(fun v -> v = 1) in
+    let result = Parser_base.run parser "" in
+    assert_equal [1] result ~printer:int_list_printer ;
+    (* don't return a parser result if it doesn't satisfy a predicate *)
+    let parser = Combinators.verify (Parser_base.unit 1) ~f:(fun v -> v = 2) in
+    let result = Parser_base.run parser "" in
+    assert_equal [] result ~printer:int_list_printer
+
+  let any_of_test =
+    "any_of"
+    >:: fun _ ->
+    (* try all of the parsers *)
+    let parser =
+      Combinators.any_of
+        [Parser_base.unit 1; Parser_base.unit 2; Parser_base.unit 3]
+    in
+    let result = Parser_base.run parser "" in
+    assert_equal [3; 2; 1] result ~printer:int_list_printer ;
+    (* ignore the parsers that fail *)
+    let parser = Combinators.any_of [Parser_base.unit 1; Parser_base.nothing] in
+    let result = Parser_base.run parser "" in
+    assert_equal [1] result ~printer:int_list_printer
+
+  let sequence_opt_test =
+    "sequence_opt"
+    >:: fun _ ->
+    (* run a parser and return Some value if it succeeds *)
+    let parser =
+      Combinators.sequence_opt (Parser_base.unit (Some 1)) ~f:(fun v ->
+          Parser_base.unit (v + 1) )
+    in
+    let result = Parser_base.run parser "" in
+    assert_equal [Some 2] result ~printer:opt_int_list_printer ;
+    (* run a parser and return None if it fails *)
+    let parser =
+      Combinators.sequence_opt (Parser_base.unit None) ~f:(fun v ->
+          Parser_base.unit (v + 1) )
+    in
+    let result = Parser_base.run parser "" in
+    assert_equal [None] result ~printer:opt_int_list_printer
+
+  let end_of_input_test =
+    "end_of_input"
+    >:: fun _ ->
+    (* succeed if the input is empty *)
+    let parser = Combinators.end_of_input in
+    let result = Parser_base.run parser "" in
+    assert_equal [()] result ~printer:unit_list_printer ;
+    (* fail if the input is not empty *)
+    let result = Parser_base.run parser "test" in
+    assert_equal [] result ~printer:unit_list_printer
+
+  let skip_forward_test =
+    "skip_forward"
+    >:: fun _ ->
+    (* skip to the end of the input *)
+    let parser =
+      Combinators.preceded (Combinators.skip_forward 4) Combinators.end_of_input
+    in
+    let result = Parser_base.run parser "test" in
+    assert_equal [()] result ~printer:unit_list_printer ;
+    (* succeed even if it goes past the end *)
+    let result = Parser_base.run parser "" in
+    assert_equal [()] result ~printer:unit_list_printer ;
+    (* fail if the input is too long *)
+    let result = Parser_base.run parser "test is" in
+    assert_equal [] result ~printer:unit_list_printer
+
+  let many_test =
+    "many"
+    >:: fun _ ->
+    (* parse a parser zero or more times *)
+    let parser = Combinators.many Strings.any_char in
+    let result = Parser_base.run parser "" in
+    assert_equal [[]] result ~printer:char_list_list_printer ;
+    let result = Parser_base.run parser "1" in
+    assert_equal [['1']] result ~printer:char_list_list_printer ;
+    let result = Parser_base.run parser "11" in
+    assert_equal [['1'; '1']] result ~printer:char_list_list_printer ;
+    let result = Parser_base.run parser "111" in
+    assert_equal [['1'; '1'; '1']] result ~printer:char_list_list_printer
+
   let tests =
     "test_combinators"
     >::: [ fail_test
@@ -187,7 +331,17 @@ module Test_combinators = struct
          ; preceded_test
          ; terminated_test
          ; delimited_test
-         ; opt_test ]
+         ; opt_test
+         ; pair_test
+         ; separated_pair_test
+         ; run_if_else_test
+         ; run_if_test
+         ; verify_test
+         ; any_of_test
+         ; sequence_opt_test
+         ; end_of_input_test
+         ; skip_forward_test
+         ; many_test ]
 end
 
 module Test_strings = struct
