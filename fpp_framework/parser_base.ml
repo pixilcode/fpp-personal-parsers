@@ -15,6 +15,8 @@ module type Idx = sig
       of tokens. *)
   type source
 
+  type token
+
   include Set.Elt with type t := t
 
   include Hashable.S with type t := t
@@ -26,6 +28,10 @@ module type Idx = sig
   val is_at_end : t -> bool
 
   val create_from_source : source -> t
+
+  val token_at : t -> token option
+
+  val tokens_at : t -> length:int -> token list option
 end
 
 module type S = sig
@@ -69,7 +75,7 @@ module type S = sig
 end
 
 module Make (C : CacheValue) (I : Idx) :
-  S with module Idx := I and type cached_value := C.t = struct
+  S with module Idx = I and type cached_value = C.t = struct
   (* types *)
   module Idx = I
 
