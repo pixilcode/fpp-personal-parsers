@@ -104,14 +104,7 @@ module Make (P : Parser_base.S) : S with type 'a parser = 'a P.parser = struct
     if Idx.is_at_end idx then callback ((), idx) else no_state_change
 
   let skip_forward (n : int) : unit parser =
-   fun (idx, callback) ->
-    let rec skip_n idx n =
-      if n = 0 then idx
-      else
-        let idx' = Idx.next idx in
-        skip_n idx' (n - 1)
-    in
-    callback ((), skip_n idx n)
+   fun (idx, callback) -> callback ((), Idx.next_nth idx n)
 
   let many (parser : 'a parser) : 'a list parser =
     let rec many' (acc : 'a list) : 'a list parser =

@@ -21,6 +21,8 @@ module type Idx = sig
 
   val next : t -> t
 
+  val next_nth : t -> int -> t
+
   val is_at_end : t -> bool
 
   val create_from_source : source -> t
