@@ -2,7 +2,11 @@ open! Core
 module Parser = Fpp.Basic_parser.Make (Int)
 open Parser.Infix_ops
 
-let number = Parser.take_while Char.is_digit |> Parser.map ~f:Int.of_string
+let number =
+  let open Parser in
+  take_while Char.is_digit
+  |> verify ~f:(fun s -> not (String.is_empty s))
+  |> map ~f:Int.of_string
 
 let add = Parser.char '+' >>* Parser.unit ( + )
 
@@ -44,4 +48,4 @@ and factor : int Parser.t =
     (number <|> (Parser.char '(' >>* expr *>> Parser.char ')'))
     (idx, callback)
 
-let parser : int Parser.t = expr
+let parse (input : string) : int list = Parser.run expr input

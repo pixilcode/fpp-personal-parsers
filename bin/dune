@@ -1,4 +1,4 @@
 (executable
- (public_name fpp_personal_parsers)
+ (public_name parse)
  (name main)
- (libraries fpp))
+ (libraries cmdliner core expr_parser))

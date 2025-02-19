@@ -9,6 +9,7 @@ bug-reports: "https://github.com/pixilcode/fpp_personal_parsers/issues"
 depends: [
   "dune" {>= "3.17"}
   "ocaml"
+  "cmdliner"
   "core"
   "ounit2"
   "odoc" {with-doc}
