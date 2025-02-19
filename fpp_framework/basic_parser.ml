@@ -64,4 +64,6 @@ module Make (C : Parser_base.CacheValue) = struct
   include Parser_base
   include Combinators
   include Strings
+
+  type 'a t = 'a parser
 end
