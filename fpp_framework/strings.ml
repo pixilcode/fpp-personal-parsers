@@ -3,9 +3,7 @@ open! Core
 module type S = sig
   type 'a parser
 
-  type token
-
-  val any_token : char parser
+  val any_char : char parser
 
   val char : char -> char parser
 
@@ -16,7 +14,8 @@ module type S = sig
   val take_while : (char -> bool) -> string parser
 end
 
-module Make (P : Parser_base.S with type Idx.token = char) = struct
+module Make (P : Parser_base.S with type Idx.token = char) :
+  S with type 'a parser = 'a P.parser = struct
   (* TODO: write tests for these *)
   open P
 

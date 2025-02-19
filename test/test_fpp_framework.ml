@@ -1,4 +1,5 @@
 open! Core
+open OUnit2
 
 (* NOTE: tests MUST consume the full string, or else the test will return an
          empty list *)
@@ -81,12 +82,14 @@ let int_pair_list_printer =
 
 let unit_list_printer = List.to_string ~f:(fun () -> "()")
 
+let char_list_printer = List.to_string ~f:Char.to_string
+
 let char_list_list_printer =
   List.to_string ~f:(List.to_string ~f:Char.to_string)
 
-module Test_base = struct
-  open OUnit2
+let string_list_printer = List.to_string ~f:Fn.id
 
+module Test_base = struct
   let nothing_test =
     "nothing"
     >:: fun _ ->
@@ -122,8 +125,6 @@ module Test_base = struct
 end
 
 module Test_combinators = struct
-  open OUnit2
-
   let fail_test =
     "fail"
     >:: fun _ ->
@@ -345,11 +346,73 @@ module Test_combinators = struct
 end
 
 module Test_strings = struct
-  let tests = OUnit2.("test_strings" >::: [])
+  let any_char_test =
+    "any_char"
+    >:: fun _ ->
+    let parser = Strings.any_char in
+    let result = Parser_base.run parser "1" in
+    assert_equal ['1'] result ~printer:char_list_printer ;
+    let result = Parser_base.run parser "" in
+    assert_equal [] result ~printer:char_list_printer
+
+  let char_test =
+    "char"
+    >:: fun _ ->
+    let parser = Strings.char '1' in
+    let result = Parser_base.run parser "1" in
+    assert_equal ['1'] result ~printer:char_list_printer ;
+    let result = Parser_base.run parser "2" in
+    assert_equal [] result ~printer:char_list_printer ;
+    let result = Parser_base.run parser "" in
+    assert_equal [] result ~printer:char_list_printer
+
+  let char_where_test =
+    "char_where"
+    >:: fun _ ->
+    let parser = Strings.char_where (fun c -> Char.equal c '1') in
+    let result = Parser_base.run parser "1" in
+    assert_equal ['1'] result ~printer:char_list_printer ;
+    let result = Parser_base.run parser "2" in
+    assert_equal [] result ~printer:char_list_printer ;
+    let result = Parser_base.run parser "" in
+    assert_equal [] result ~printer:char_list_printer
+
+  let string_test =
+    "string"
+    >:: fun _ ->
+    let parser = Strings.string "test" in
+    let result = Parser_base.run parser "test" in
+    assert_equal ["test"] result ~printer:string_list_printer ;
+    let result = Parser_base.run parser "toast" in
+    assert_equal [] result ~printer:string_list_printer ;
+    let result = Parser_base.run parser "" in
+    assert_equal [] result ~printer:string_list_printer
+
+  let take_while_test =
+    "take_while"
+    >:: fun _ ->
+    let parser = Strings.take_while (fun c -> Char.equal c '1') in
+    let result = Parser_base.run parser "" in
+    assert_equal [""] result ~printer:string_list_printer ;
+    let result = Parser_base.run parser "1" in
+    assert_equal ["1"] result ~printer:string_list_printer ;
+    let result = Parser_base.run parser "11" in
+    assert_equal ["11"] result ~printer:string_list_printer ;
+    let result = Parser_base.run parser "111" in
+    assert_equal ["111"] result ~printer:string_list_printer ;
+    let result = Parser_base.run parser "211" in
+    assert_equal [] result ~printer:string_list_printer
+
+  let tests =
+    "test_strings"
+    >::: [ any_char_test
+         ; char_test
+         ; char_where_test
+         ; string_test
+         ; take_while_test ]
 end
 
 let () =
-  OUnit2.run_test_tt_main
-    OUnit2.(
-      "test_fpp_framework"
-      >::: [Test_base.tests; Test_combinators.tests; Test_strings.tests] )
+  run_test_tt_main
+    ( "test_fpp_framework"
+    >::: [Test_base.tests; Test_combinators.tests; Test_strings.tests] )
