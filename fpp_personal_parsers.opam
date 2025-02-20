@@ -12,6 +12,7 @@ depends: [
   "cmdliner"
   "core"
   "ounit2"
+  "ppx_jane"
   "odoc" {with-doc}
 ]
 build: [

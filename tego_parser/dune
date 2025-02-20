@@ -1,3 +1,5 @@
 (library
  (name tego_parser)
+ (preprocess
+  (pps ppx_jane))
  (libraries core fpp))

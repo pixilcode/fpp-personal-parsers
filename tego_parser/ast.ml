@@ -2,6 +2,7 @@ open! Core
 
 module Match = struct
   type value = Int of int | Bool of bool | Char of char | String of string
+  [@@deriving compare, sexp]
 
   type t =
     | Ident of string
@@ -10,6 +11,7 @@ module Match = struct
     | Value of value
     | Unit
     | Ignore
+  [@@deriving compare, sexp]
 
   let join (a : t) (b : t) : t =
     match (a, b) with
@@ -55,8 +57,9 @@ module Expr = struct
     | Char of char
     | String of string
     | Unit
+  [@@deriving compare, sexp]
 
-  type unary_op = Not | Negate
+  type unary_op = Not | Negate [@@deriving compare, sexp]
 
   type binary_op =
     | Plus
@@ -75,6 +78,7 @@ module Expr = struct
     | GreaterThan
     | LessThanEqual
     | GreaterThanEqual
+  [@@deriving compare, sexp]
 
   type t =
     | Do of t * Match.t * t
@@ -89,6 +93,7 @@ module Expr = struct
     | Unary of unary_op * t
     | Binary of t * binary_op * t
     | Literal of value
+  [@@deriving compare, sexp]
 
   let rec to_debug_string (e : t) : string =
     match e with
@@ -173,14 +178,14 @@ module Expr = struct
 end
 
 module Decl = struct
-  type t = Expression of string * Expr.t
+  type t = Expression of string * Expr.t [@@deriving compare, sexp]
 
   let to_debug_string (d : t) : string =
     match d with Expression (s, e) -> s ^ " = " ^ Expr.to_debug_string e
 end
 
 module Prog = struct
-  type t = Decl.t list
+  type t = Decl.t list [@@deriving compare, sexp]
 
   let to_debug_string (p : t) : string =
     let decls = List.map ~f:Decl.to_debug_string p in
