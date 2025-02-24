@@ -35,6 +35,8 @@ module type S = sig
 
   val many : 'a parser -> 'a list parser
 
+  val many1 : 'a parser -> 'a list parser
+
   module Infix_ops : sig
     val ( >>= ) : 'a parser -> ('a -> 'b parser) -> 'b parser
 
@@ -111,6 +113,10 @@ module Make (P : Parser_base.S) : S with type 'a parser = 'a P.parser = struct
       choice (sequence parser ~f:(fun v -> many' (v :: acc))) (unit acc)
     in
     map (many' []) ~f:List.rev
+
+  let many1 (parser : 'a parser) : 'a list parser =
+    sequence parser ~f:(fun v ->
+        sequence (many parser) ~f:(fun vs -> unit (v :: vs)) )
 
   module Infix_ops = struct
     let ( >>= ) parser f = sequence parser ~f

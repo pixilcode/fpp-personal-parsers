@@ -1,0 +1,4 @@
+- memoization isn't the most convenient thing
+- I still need a custom parser for any lookahead that I want (since I don't have it built in) (see multiline comments)
+- when I memoized, I didn't want to return the memoized value, since it was wrapped so that I could adapt for all four kinds of nodes
+- parser is easy to write by pasting grammar in a comment, then letting AI autocomplete. It took maybe 2 hours

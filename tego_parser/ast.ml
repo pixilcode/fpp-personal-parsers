@@ -6,32 +6,19 @@ module Match = struct
 
   type t =
     | Ident of string
-    | List of t list
+    | List of t * t
     | Boxed of t
     | Value of value
     | Unit
     | Ignore
   [@@deriving compare, sexp]
 
-  let join (a : t) (b : t) : t =
-    match (a, b) with
-    | List a, List b ->
-        List (a @ b)
-    | List a, b ->
-        List (a @ [b])
-    | a, List b ->
-        List (a :: b)
-    | a, b ->
-        List [a; b]
-
   let rec to_debug_string (m : t) : string =
     match m with
     | Ident s ->
         s
-    | List l ->
-        let list = List.map ~f:to_debug_string l in
-        let list_str = String.concat ~sep:", " list in
-        "(" ^ list_str ^ ")"
+    | List (a, b) ->
+        to_debug_string a ^ ", " ^ to_debug_string b
     | Boxed m ->
         "[" ^ to_debug_string m ^ "]"
     | Value v -> (
