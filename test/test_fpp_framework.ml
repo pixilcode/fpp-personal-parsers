@@ -209,33 +209,33 @@ module Test_combinators = struct
     let result = Parser_base.run parser "" in
     assert_equal [(1, 2)] result ~printer:int_pair_list_printer
 
-  let run_if_else_test =
-    "run_if_else"
+  let parse_if_else_test =
+    "parse_if_else"
     >:: fun _ ->
     (* run a parser if a condition is true, otherwise run another parser *)
     let parser =
-      Combinators.run_if_else ~cond:true (Parser_base.unit 1)
+      Combinators.parse_if_else ~cond:true (Parser_base.unit 1)
         (Parser_base.unit 2)
     in
     let result = Parser_base.run parser "" in
     assert_equal [1] result ~printer:int_list_printer ;
     (* run a parser if a condition is false, otherwise run another parser *)
     let parser =
-      Combinators.run_if_else ~cond:false (Parser_base.unit 1)
+      Combinators.parse_if_else ~cond:false (Parser_base.unit 1)
         (Parser_base.unit 2)
     in
     let result = Parser_base.run parser "" in
     assert_equal [2] result ~printer:int_list_printer
 
-  let run_if_test =
-    "run_if"
+  let parse_if_test =
+    "parse_if"
     >:: fun _ ->
     (* run a parser if a condition is true *)
-    let parser = Combinators.run_if ~cond:true (Parser_base.unit 1) in
+    let parser = Combinators.parse_if ~cond:true (Parser_base.unit 1) in
     let result = Parser_base.run parser "" in
     assert_equal [1] result ~printer:int_list_printer ;
     (* don't run a parser if a condition is false *)
-    let parser = Combinators.run_if ~cond:false (Parser_base.unit 1) in
+    let parser = Combinators.parse_if ~cond:false (Parser_base.unit 1) in
     let result = Parser_base.run parser "" in
     assert_equal [] result ~printer:int_list_printer
 
@@ -335,8 +335,8 @@ module Test_combinators = struct
          ; opt_test
          ; pair_test
          ; separated_pair_test
-         ; run_if_else_test
-         ; run_if_test
+         ; parse_if_else_test
+         ; parse_if_test
          ; verify_test
          ; any_of_test
          ; sequence_opt_test

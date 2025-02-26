@@ -19,9 +19,9 @@ module type S = sig
 
   val separated_pair : 'a parser -> 'b parser -> 'c parser -> ('a * 'c) parser
 
-  val run_if_else : cond:bool -> 'a parser -> 'a parser -> 'a parser
+  val parse_if_else : cond:bool -> 'a parser -> 'a parser -> 'a parser
 
-  val run_if : cond:bool -> 'a parser -> 'a parser
+  val parse_if : cond:bool -> 'a parser -> 'a parser
 
   val verify : 'a parser -> f:('a -> bool) -> 'a parser
 
@@ -83,12 +83,12 @@ module Make (P : Parser_base.S) : S with type 'a parser = 'a P.parser = struct
       (parser2 : 'c parser) : ('a * 'c) parser =
     pair (terminated parser1 separator) parser2
 
-  let run_if_else ~(cond : bool) (parser1 : 'a parser) (parser2 : 'a parser) :
+  let parse_if_else ~(cond : bool) (parser1 : 'a parser) (parser2 : 'a parser) :
       'a parser =
     if cond then parser1 else parser2
 
-  let run_if ~(cond : bool) (parser : 'a parser) : 'a parser =
-    run_if_else ~cond parser fail
+  let parse_if ~(cond : bool) (parser : 'a parser) : 'a parser =
+    parse_if_else ~cond parser fail
 
   let verify (parser : 'a parser) ~(f : 'a -> bool) : 'a parser =
     sequence parser ~f:(fun v -> if f v then unit v else fail)
