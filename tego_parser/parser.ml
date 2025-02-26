@@ -302,10 +302,10 @@ end = struct
     ( left_paren >>* opt_nl
     >>* pattern *>> opt_nl *>> right_paren
     <|> (left_bracket >>* opt_nl >>* pattern *>> opt_nl *>> right_bracket)
-    <|> _atom )
+    <|> atom )
       (idx, callback)
 
-  and _atom : Match.t parser =
+  and atom : Match.t parser =
    fun (idx, callback) ->
     ( boolean
     >>| (fun b -> Match.Value (Match.Bool b))
