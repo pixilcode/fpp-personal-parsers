@@ -1,4 +1,4 @@
 (executable
  (public_name parse)
  (name main)
- (libraries cmdliner core expr_parser))
+ (libraries cmdliner core expr_parser tego_parser))
