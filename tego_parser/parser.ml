@@ -846,8 +846,6 @@ end = struct
     let e = List.fold_right ps ~init:e ~f:(fun p e -> Ast.Expr.Fn (p, e)) in
     Decl.Expression (id, e) )
       (idx, callback)
-
-  let parse : Decl.t parser = declaration
 end
 
 module Program : sig
@@ -858,7 +856,7 @@ end = struct
   open Token
   module Prog = Ast.Prog
 
-  let rec program : Prog.t parser =
+  let program : Prog.t parser =
    fun (idx, callback) ->
     memoize ~tag:"program"
       ~f:(fun p -> CachedValue.ProgNode p)
