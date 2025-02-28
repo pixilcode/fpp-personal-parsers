@@ -4,3 +4,4 @@
 - parser is easy to write by pasting grammar in a comment, then letting AI autocomplete. It took maybe 2 hours
 - hard to debug infinite loop caused by parsing
 - 'many' must consume something
+  - cannot have a nested 'many': `many (many (char '0'))`

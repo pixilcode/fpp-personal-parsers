@@ -104,23 +104,44 @@ module Token = struct
     >>* valid_comment_chars *>> Strings.string "-}"
     >>= fun comment -> unit ("{-" ^ comment ^ "-}")
 
-  let inline_ignored : unit parser =
-    inline_whitespace >>* unit () <|> (inline_comment >>* unit ())
+  let inline_ignored : string parser =
+    inline_whitespace >>| Char.to_string <|> inline_comment
 
-  let newline_ignored : unit parser =
-    newline_whitespace >>* unit ()
-    <|> (single_line_comment >>* unit ())
-    <|> (multiline_comment >>* unit ())
+  let newline_ignored : string parser =
+    newline_whitespace >>| Char.to_string <|> single_line_comment
+    <|> multiline_comment
 
-  let sp : unit parser = many inline_ignored >>* unit ()
+  (* whitespace abbreviations *)
+  let opt_nl : unit parser =
+    many inline_ignored
+    >>* many (newline_ignored >>* many inline_ignored)
+    >>* unit ()
 
-  let nl : unit parser = many newline_ignored >>* unit ()
-
-  let opt_nl : unit parser = sp >>* many (nl >>* sp) >>* unit ()
-
-  let req_nl : unit parser = sp >>* many1 (nl >>* sp) >>* unit ()
+  let req_nl : unit parser =
+    many inline_ignored
+    >>* many1 (newline_ignored >>* many inline_ignored)
+    >>* unit ()
 
   (* keywords *)
+  let keywords : string list =
+    [ "and"
+    ; "or"
+    ; "xor"
+    ; "not"
+    ; "true"
+    ; "false"
+    ; "if"
+    ; "then"
+    ; "else"
+    ; "let"
+    ; "in"
+    ; "fn"
+    ; "match"
+    ; "to"
+    ; "delay"
+    ; "do"
+    ; "def" ]
+
   let and_ : string parser = Strings.string "and"
 
   let or_ : string parser = Strings.string "or"
@@ -217,9 +238,11 @@ module Token = struct
           true
       | _ ->
           false )
-    >>| fun rest ->
+    >>= fun rest ->
     let first_char = Char.to_string first_char in
-    String.append first_char rest
+    let identifier = String.append first_char rest in
+    if List.mem keywords identifier ~equal:String.equal then fail
+    else unit identifier
 
   let integer : int parser =
     Strings.char_where (function '0' .. '9' -> true | _ -> false)

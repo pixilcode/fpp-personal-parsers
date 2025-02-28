@@ -19,37 +19,37 @@ module Test_match = struct
     let input = "true" in
     let result = parse input in
     let expected = [Match.Value (Match.Bool true)] in
-    assert_equal expected result ~printer:match_list_to_string
-  (* (* boolean false *)
+    assert_equal expected result ~printer:match_list_to_string ;
+    (* boolean false *)
     let input = "false" in
     let result = parse input in
     let expected = [Match.Value (Match.Bool false)] in
-    assert_equal expected result ;
+    assert_equal expected result ~printer:match_list_to_string ;
     (* ignore *)
     let input = "_" in
     let result = parse input in
     let expected = [Match.Ignore] in
-    assert_equal expected result ;
+    assert_equal expected result ~printer:match_list_to_string ;
     (* ident *)
     let input = "a" in
     let result = parse input in
     let expected = [Match.Ident "a"] in
-    assert_equal expected result ;
+    assert_equal expected result ~printer:match_list_to_string ;
     (* int *)
     let input = "1" in
     let result = parse input in
     let expected = [Match.Value (Match.Int 1)] in
-    assert_equal expected result ;
+    assert_equal expected result ~printer:match_list_to_string ;
     (* string *)
     let input = "\"a\"" in
     let result = parse input in
     let expected = [Match.Value (Match.String "a")] in
-    assert_equal expected result ;
+    assert_equal expected result ~printer:match_list_to_string ;
     (* char *)
     let input = "'a'" in
     let result = parse input in
     let expected = [Match.Value (Match.Char 'a')] in
-    assert_equal expected result *)
+    assert_equal expected result ~printer:match_list_to_string
 
   let tests = "test_match" >::: [atom_test]
 end
