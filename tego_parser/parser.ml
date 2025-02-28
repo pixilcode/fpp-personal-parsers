@@ -49,55 +49,21 @@ module Token = struct
 
   let inline_comment : string parser =
     let valid_comment_chars : string parser =
-     fun (idx, callback) ->
-      let rec loop idx acc =
-        let finish () =
-          let comment = String.of_char_list (List.rev acc) in
-          callback (comment, idx)
-        in
-        let next_idx = Idx.next idx in
-        match Idx.token_at idx with
-        | Some '\n' ->
-            finish ()
-        | Some '-' -> (
-          match Idx.token_at next_idx with
-          | Some '}' ->
-              finish ()
-          | _ ->
-              loop next_idx ('-' :: acc) )
-        | Some c ->
-            loop next_idx (c :: acc)
-        | None ->
-            finish ()
-      in
-      loop idx []
+      many
+        ( char_where (fun c -> not (Char.equal c '-' || Char.equal c '\n'))
+        <|> char '-' *>> peek (char_where (fun c -> not (Char.equal c '}'))) )
+      >>| String.of_char_list
     in
-    Strings.string "{-"
-    >>* valid_comment_chars *>> Strings.string "-}"
+    string "{-"
+    >>* valid_comment_chars *>> string "-}"
     >>= fun comment -> unit ("{-" ^ comment ^ "-}")
 
   let multiline_comment : string parser =
     let valid_comment_chars : string parser =
-     fun (idx, callback) ->
-      let rec loop idx acc =
-        let finish () =
-          let comment = String.of_char_list (List.rev acc) in
-          callback (comment, idx)
-        in
-        let next_idx = Idx.next idx in
-        match Idx.token_at idx with
-        | Some '-' -> (
-          match Idx.token_at next_idx with
-          | Some '}' ->
-              finish ()
-          | _ ->
-              loop next_idx ('-' :: acc) )
-        | Some c ->
-            loop next_idx (c :: acc)
-        | None ->
-            finish ()
-      in
-      loop idx []
+      many
+        ( char_where (fun c -> not (Char.equal c '-'))
+        <|> char '-' *>> peek (char_where (fun c -> not (Char.equal c '}'))) )
+      >>| String.of_char_list
     in
     Strings.string "{-"
     >>* valid_comment_chars *>> newline_whitespace
