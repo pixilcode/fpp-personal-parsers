@@ -325,6 +325,36 @@ module Test_combinators = struct
     let result = Parser_base.run parser "111" in
     assert_equal [['1'; '1'; '1']] result ~printer:char_list_list_printer
 
+  let many1_test =
+    "many1"
+    >:: fun _ ->
+    (* parse a parser one or more times *)
+    let parser = Combinators.many1 Strings.any_char in
+    let result = Parser_base.run parser "" in
+    assert_equal [] result ~printer:char_list_list_printer ;
+    let result = Parser_base.run parser "1" in
+    assert_equal [['1']] result ~printer:char_list_list_printer ;
+    let result = Parser_base.run parser "11" in
+    assert_equal [['1'; '1']] result ~printer:char_list_list_printer ;
+    let result = Parser_base.run parser "111" in
+    assert_equal [['1'; '1'; '1']] result ~printer:char_list_list_printer
+
+  let peek_test =
+    "peek"
+    >:: fun _ ->
+    (* peek at the next character *)
+    let parser =
+      Combinators.terminated
+        (Combinators.peek (Strings.char '1'))
+        Strings.any_char
+    in
+    let result = Parser_base.run parser "1" in
+    assert_equal ['1'] result ~printer:char_list_printer ;
+    let result = Parser_base.run parser "2" in
+    assert_equal [] result ~printer:char_list_printer ;
+    let result = Parser_base.run parser "" in
+    assert_equal [] result ~printer:char_list_printer
+
   let tests =
     "test_combinators"
     >::: [ fail_test
@@ -342,7 +372,9 @@ module Test_combinators = struct
          ; sequence_opt_test
          ; end_of_input_test
          ; skip_forward_test
-         ; many_test ]
+         ; many_test
+         ; many1_test
+         ; peek_test ]
 end
 
 module Test_strings = struct
