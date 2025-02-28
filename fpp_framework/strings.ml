@@ -11,6 +11,8 @@ module type S = sig
 
   val string : string -> string parser
 
+  val string_where : len:int -> (string -> bool) -> string parser
+
   val take_while : (char -> bool) -> string parser
 end
 
@@ -42,6 +44,15 @@ module Make (P : Parser_base.S with type Idx.token = char) :
     match Idx.token_at idx with
     | Some c when f c ->
         callback (c, Idx.next idx)
+    | _ ->
+        no_state_change
+
+  let string_where ~(len : int) (f : string -> bool) : string parser =
+   fun (idx, callback) ->
+    match Idx.tokens_at idx ~length:len with
+    | Some s ->
+        let s = String.of_char_list s in
+        if f s then callback (s, Idx.next_nth idx len) else no_state_change
     | _ ->
         no_state_change
 

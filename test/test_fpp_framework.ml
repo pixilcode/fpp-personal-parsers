@@ -89,6 +89,10 @@ let char_list_list_printer =
 
 let string_list_printer = List.to_string ~f:Fn.id
 
+let char_list_string_pair_list_printer =
+  List.to_string ~f:(fun (a, b) ->
+      Printf.sprintf "([%s], %s)" (List.to_string ~f:Char.to_string a) b )
+
 module Test_base = struct
   let nothing_test =
     "nothing"
@@ -353,7 +357,22 @@ module Test_combinators = struct
     let result = Parser_base.run parser "2" in
     assert_equal [] result ~printer:char_list_printer ;
     let result = Parser_base.run parser "" in
-    assert_equal [] result ~printer:char_list_printer
+    assert_equal [] result ~printer:char_list_printer ;
+    let parser =
+      Combinators.pair
+        (Combinators.many
+           (Combinators.terminated (Strings.char '-')
+              (Combinators.peek (Strings.char '-')) ) )
+        (Strings.string "->")
+    in
+    let result = Parser_base.run parser "--->" in
+    assert_equal
+      [(['-'; '-'], "->")]
+      result ~printer:char_list_string_pair_list_printer ;
+    let result = Parser_base.run parser "---->" in
+    assert_equal
+      [(['-'; '-'; '-'], "->")]
+      result ~printer:char_list_string_pair_list_printer
 
   let tests =
     "test_combinators"
@@ -420,6 +439,21 @@ module Test_strings = struct
     let result = Parser_base.run parser "" in
     assert_equal [] result ~printer:string_list_printer
 
+  let string_where_test =
+    "string_where"
+    >:: fun _ ->
+    let parser = Strings.string_where ~len:5 (fun s -> String.contains s '1') in
+    let result = Parser_base.run parser "11111" in
+    assert_equal ["11111"] result ~printer:string_list_printer ;
+    let result = Parser_base.run parser "21111" in
+    assert_equal ["21111"] result ~printer:string_list_printer ;
+    let result = Parser_base.run parser "22222" in
+    assert_equal [] result ~printer:string_list_printer ;
+    let result = Parser_base.run parser "1111" in
+    assert_equal [] result ~printer:string_list_printer ;
+    let result = Parser_base.run parser "111111" in
+    assert_equal [] result ~printer:string_list_printer
+
   let take_while_test =
     "take_while"
     >:: fun _ ->
@@ -441,6 +475,7 @@ module Test_strings = struct
          ; char_test
          ; char_where_test
          ; string_test
+         ; string_where_test
          ; take_while_test ]
 end
 
