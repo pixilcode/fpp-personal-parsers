@@ -61,6 +61,13 @@ module type S = sig
 
   val choice : 'a parser -> 'a parser -> 'a parser
 
+  val trace :
+       tag:string
+    -> ?additional_msg:string
+    -> ?print:(string -> unit)
+    -> 'a parser
+    -> 'a parser
+
   (* fixed-point parsing functions *)
   val no_state_change : state_transformer
 
@@ -147,6 +154,21 @@ module Make (C : CacheValue) (I : Idx) :
   let choice (parser1 : 'a parser) (parser2 : 'a parser) : 'a parser =
    fun (idx, callback) ->
     fun state -> state |> parser1 (idx, callback) |> parser2 (idx, callback)
+
+  let trace ~(tag : string) ?(additional_msg : string option)
+      ?(print : (string -> unit) option) (parser : 'a parser) : 'a parser =
+    let print = match print with Some p -> p | None -> print_endline in
+    fun (idx, callback) ->
+      let additional_msg =
+        match additional_msg with Some msg -> ": " ^ msg | None -> ""
+      in
+      let enter_msg = Printf.sprintf "INVOKE  %s%s" tag additional_msg in
+      let exit_msg = Printf.sprintf "RESOLVE %s%s" tag additional_msg in
+      print enter_msg ;
+      let state_transformer = parser (idx, callback) in
+      fun state ->
+        let new_state = state_transformer state in
+        print exit_msg ; new_state
 
   (* fixed-point parsing functions *)
   let no_state_change : state_transformer = fun state -> state
