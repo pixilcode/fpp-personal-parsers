@@ -5,3 +5,4 @@
 - hard to debug infinite loop caused by parsing
 - 'many' must consume something
   - cannot have a nested 'many': `many (many (char '0'))`
+- need to have a single cached value that I convert to and from
