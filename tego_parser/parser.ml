@@ -417,35 +417,42 @@ end = struct
 
   and xor_expression : Expr.t parser =
    fun (idx, callback) ->
-    memoize_expression ~tag:"xor_expression"
-      ( opt (xor_expression *>> opt_nl *>> xor *>> opt_nl)
-      >>= fun e1 ->
-      and_expression
-      >>| fun e2 ->
-      match e1 with None -> e2 | Some e1 -> Expr.Binary (e1, Expr.Xor, e2) )
+    trace ~tag:"xor_expression"
+      ~additional_msg:(idx |> Idx.sexp_of_t |> Sexp.to_string_hum)
+      (memoize_expression ~tag:"xor_expression"
+         ( opt (xor_expression *>> opt_nl *>> xor *>> opt_nl)
+         >>= fun e1 ->
+         and_expression
+         >>| fun e2 ->
+         match e1 with None -> e2 | Some e1 -> Expr.Binary (e1, Expr.Xor, e2) ) )
       (idx, callback)
 
   and and_expression : Expr.t parser =
    fun (idx, callback) ->
-    memoize_expression ~tag:"and_expression"
-      ( opt (and_expression *>> opt_nl *>> and_ *>> opt_nl)
-      >>= fun e1 ->
-      equality_expression
-      >>| fun e2 ->
-      match e1 with None -> e2 | Some e1 -> Expr.Binary (e1, Expr.And, e2) )
+    trace ~tag:"and_expression"
+      ~additional_msg:(idx |> Idx.sexp_of_t |> Sexp.to_string_hum)
+      (memoize_expression ~tag:"and_expression"
+         ( opt (and_expression *>> opt_nl *>> and_ *>> opt_nl)
+         >>= fun e1 ->
+         equality_expression
+         >>| fun e2 ->
+         match e1 with None -> e2 | Some e1 -> Expr.Binary (e1, Expr.And, e2) ) )
       (idx, callback)
 
   and equality_expression : Expr.t parser =
    fun (idx, callback) ->
     let equal = equal >>* unit Expr.Equal in
     let not_equal = not_equal >>* unit Expr.NotEqual in
-    memoize_expression ~tag:"equality_expression"
-      ( opt
-          (equality_expression <&> (opt_nl >>* (equal <|> not_equal) *>> opt_nl))
-      >>= fun e1 ->
-      relational_expression
-      >>| fun e2 ->
-      match e1 with None -> e2 | Some (e1, op) -> Expr.Binary (e1, op, e2) )
+    trace ~tag:"equality_expression"
+      ~additional_msg:(idx |> Idx.sexp_of_t |> Sexp.to_string_hum)
+      (memoize_expression ~tag:"equality_expression"
+         ( opt
+             ( equality_expression
+             <&> (opt_nl >>* (equal <|> not_equal) *>> opt_nl) )
+         >>= fun e1 ->
+         relational_expression
+         >>| fun e2 ->
+         match e1 with None -> e2 | Some (e1, op) -> Expr.Binary (e1, op, e2) ) )
       (idx, callback)
 
   and relational_expression : Expr.t parser =
@@ -456,29 +463,33 @@ end = struct
     let greater_than_equal =
       greater_than_equal >>* unit Expr.GreaterThanEqual
     in
-    memoize_expression ~tag:"relational_expression"
-      ( opt
-          ( relational_expression
-          <&> ( opt_nl
-              >>* ( less_than <|> greater_than <|> less_than_equal
-                  <|> greater_than_equal )
-                  *>> opt_nl ) )
-      >>= fun e1 ->
-      additive_expression
-      >>| fun e2 ->
-      match e1 with None -> e2 | Some (e1, op) -> Expr.Binary (e1, op, e2) )
+    trace ~tag:"relational_expression"
+      ~additional_msg:(idx |> Idx.sexp_of_t |> Sexp.to_string_hum)
+      (memoize_expression ~tag:"relational_expression"
+         ( opt
+             ( relational_expression
+             <&> ( opt_nl
+                 >>* ( less_than <|> greater_than <|> less_than_equal
+                     <|> greater_than_equal )
+                     *>> opt_nl ) )
+         >>= fun e1 ->
+         additive_expression
+         >>| fun e2 ->
+         match e1 with None -> e2 | Some (e1, op) -> Expr.Binary (e1, op, e2) ) )
       (idx, callback)
 
   and additive_expression : Expr.t parser =
    fun (idx, callback) ->
     let plus = plus >>* unit Expr.Plus in
     let minus = minus >>* unit Expr.Minus in
-    memoize_expression ~tag:"additive_expression"
-      ( opt (additive_expression <&> (opt_nl >>* (plus <|> minus) *>> opt_nl))
-      >>= fun e1 ->
-      multiplicative_expression
-      >>| fun e2 ->
-      match e1 with None -> e2 | Some (e1, op) -> Expr.Binary (e1, op, e2) )
+    trace ~tag:"additive_expression"
+      ~additional_msg:(idx |> Idx.sexp_of_t |> Sexp.to_string_hum)
+      (memoize_expression ~tag:"additive_expression"
+         ( opt (additive_expression <&> (opt_nl >>* (plus <|> minus) *>> opt_nl))
+         >>= fun e1 ->
+         multiplicative_expression
+         >>| fun e2 ->
+         match e1 with None -> e2 | Some (e1, op) -> Expr.Binary (e1, op, e2) ) )
       (idx, callback)
 
   and multiplicative_expression : Expr.t parser =
@@ -486,70 +497,89 @@ end = struct
     let star = star >>* unit Expr.Multiply in
     let slash = slash >>* unit Expr.Divide in
     let modulo = modulo >>* unit Expr.Modulo in
-    memoize_expression ~tag:"multiplicative_expression"
-      ( opt
-          ( multiplicative_expression
-          <&> (opt_nl >>* (star <|> slash <|> modulo) *>> opt_nl) )
-      >>= fun e1 ->
-      negate_expression
-      >>| fun e2 ->
-      match e1 with None -> e2 | Some (e1, op) -> Expr.Binary (e1, op, e2) )
+    trace ~tag:"multiplicative_expression"
+      (memoize_expression ~tag:"multiplicative_expression"
+         ( opt
+             ( multiplicative_expression
+             <&> (opt_nl >>* (star <|> slash <|> modulo) *>> opt_nl) )
+         >>= fun e1 ->
+         negate_expression
+         >>| fun e2 ->
+         match e1 with None -> e2 | Some (e1, op) -> Expr.Binary (e1, op, e2) ) )
       (idx, callback)
 
   and negate_expression : Expr.t parser =
    fun (idx, callback) ->
-    ( minus >>* opt_nl >>* negate_expression
-    >>| (fun e -> Expr.Unary (Expr.Negate, e))
-    <|> not_expression )
+    trace ~tag:"negate_expression"
+      ~additional_msg:(idx |> Idx.sexp_of_t |> Sexp.to_string)
+      ( minus >>* opt_nl >>* negate_expression
+      >>| (fun e -> Expr.Unary (Expr.Negate, e))
+      <|> not_expression )
       (idx, callback)
 
   and not_expression : Expr.t parser =
    fun (idx, callback) ->
-    ( not_ >>* opt_nl >>* not_expression
-    >>| (fun e -> Expr.Unary (Expr.Not, e))
-    <|> function_expression )
+    trace ~tag:"not_expression"
+      ~additional_msg:(idx |> Idx.sexp_of_t |> Sexp.to_string)
+      ( not_ >>* opt_nl >>* not_expression
+      >>| (fun e -> Expr.Unary (Expr.Not, e))
+      <|> function_expression )
       (idx, callback)
 
   and function_expression : Expr.t parser =
    fun (idx, callback) ->
-    ( fn >>* opt_nl >>* Match.pattern
-    >>= (fun p ->
-    opt_nl >>* arrow >>* opt_nl >>* expression >>| fun e -> Expr.Fn (p, e) )
-    <|> function_application_expression )
+    trace ~tag:"function_expression"
+      ~additional_msg:(idx |> Idx.sexp_of_t |> Sexp.to_string)
+      ( fn >>* opt_nl >>* Match.pattern
+      >>= (fun p ->
+      opt_nl >>* arrow >>* opt_nl >>* expression >>| fun e -> Expr.Fn (p, e) )
+      <|> function_application_expression )
       (idx, callback)
 
   and function_application_expression : Expr.t parser =
    fun (idx, callback) ->
-    memoize_expression ~tag:"function_application_expression"
-      ( function_application_expression
-      >>= fun e1 -> dot_expression >>| fun e2 -> Expr.FnApp (e1, e2) )
+    trace ~tag:"function_application_expression"
+      ~additional_msg:(idx |> Idx.sexp_of_t |> Sexp.to_string)
+      (memoize_expression ~tag:"function_application_expression"
+         ( opt function_application_expression
+         >>= fun e1 ->
+         dot_expression
+         >>| fun e2 ->
+         match e1 with Some e1 -> Expr.FnApp (e1, e2) | None -> e2 ) )
       (idx, callback)
 
   and dot_expression : Expr.t parser =
    fun (idx, callback) ->
-    memoize_expression ~tag:"dot_expression"
-      ( opt (dot_expression *>> opt_nl *>> dot *>> opt_nl)
-      >>= fun e1 ->
-      grouping_expression
-      >>| fun e2 -> match e1 with None -> e2 | Some e1 -> Expr.FnApp (e1, e2) )
+    trace ~tag:"dot_expression"
+      ~additional_msg:(idx |> Idx.sexp_of_t |> Sexp.to_string)
+      (memoize_expression ~tag:"dot_expression"
+         ( opt (dot_expression *>> opt_nl *>> dot *>> opt_nl)
+         >>= fun e1 ->
+         grouping_expression
+         >>| fun e2 ->
+         match e1 with None -> e2 | Some e1 -> Expr.FnApp (e1, e2) ) )
       (idx, callback)
 
   and grouping_expression : Expr.t parser =
    fun (idx, callback) ->
-    ( left_paren >>* opt_nl
-    >>* expression *>> opt_nl *>> right_paren
-    <|> (left_bracket >>* opt_nl >>* expression *>> opt_nl *>> right_bracket)
-    <|> literal_expression )
+    trace ~tag:"grouping_expression"
+      ~additional_msg:(idx |> Idx.sexp_of_t |> Sexp.to_string)
+      ( left_paren >>* opt_nl
+      >>* expression *>> opt_nl *>> right_paren
+      <|> (left_bracket >>* opt_nl >>* expression *>> opt_nl *>> right_bracket)
+      <|> literal_expression )
       (idx, callback)
 
   and literal_expression : Expr.t parser =
    fun (idx, callback) ->
-    ( boolean
-    >>| (fun b -> Expr.Literal (Expr.Bool b))
-    <|> (identifier >>| fun id -> Expr.Variable id)
-    <|> (integer >>| fun i -> Expr.Literal (Expr.Int i))
-    <|> (string >>| fun s -> Expr.Literal (Expr.String s))
-    <|> (char >>| fun c -> Expr.Literal (Expr.Char c)) )
+    trace ~tag:"literal_expression"
+      ~additional_msg:(idx |> Idx.sexp_of_t |> Sexp.to_string)
+      ( boolean
+      >>| (fun b -> Expr.Literal (Expr.Bool b))
+      <|> (identifier >>| fun id -> Expr.Variable id)
+      <|> (integer >>| fun i -> Expr.Literal (Expr.Int i))
+      <|> (string >>| fun s -> Expr.Literal (Expr.String s))
+      <|> (char >>| fun c -> Expr.Literal (Expr.Char c)) )
       (idx, callback)
 end
 

@@ -6,3 +6,5 @@
 - 'many' must consume something
   - cannot have a nested 'many': `many (many (char '0'))`
 - need to have a single cached value that I convert to and from
+- an "error handler" just consumes the rest of the string, then returns an `Error`
+  - however, requires ordered choice
