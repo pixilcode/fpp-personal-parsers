@@ -139,7 +139,31 @@ module Test_expressions = struct
     let expected = [Expr.Literal (Expr.Char 'a')] in
     assert_equal expected result ~printer:expr_list_to_string
 
-  let tests = "test_expressions" >::: [literal_test]
+  let grouping_expression_test =
+    "grouping_expression_test"
+    >:: fun _ ->
+    (* parentheses *)
+    let input = "(1)" in
+    let result = parse input in
+    let expected = [Expr.Literal (Expr.Int 1)] in
+    assert_equal expected result ~printer:expr_list_to_string ;
+    (* boxed *)
+    let input = "[1]" in
+    let result = parse input in
+    let expected = [Expr.Boxed (Expr.Literal (Expr.Int 1))] in
+    assert_equal expected result ~printer:expr_list_to_string ;
+    (* unit *)
+    let input = "()" in
+    let result = parse input in
+    let expected = [Expr.Literal Expr.Unit] in
+    assert_equal expected result ~printer:expr_list_to_string ;
+    (* literal *)
+    let input = "1" in
+    let result = parse input in
+    let expected = [Expr.Literal (Expr.Int 1)] in
+    assert_equal expected result ~printer:expr_list_to_string
+
+  let tests = "test_expressions" >::: [literal_test; grouping_expression_test]
 end
 
 module Test_declaration = struct

@@ -565,8 +565,11 @@ end = struct
     trace ~tag:"grouping_expression"
       ~additional_msg:(idx |> Idx.sexp_of_t |> Sexp.to_string)
       ( left_paren >>* opt_nl
-      >>* expression *>> opt_nl *>> right_paren
-      <|> (left_bracket >>* opt_nl >>* expression *>> opt_nl *>> right_bracket)
+      >>* opt expression *>> opt_nl *>> right_paren
+      >>| (fun e -> Option.value ~default:(Expr.Literal Expr.Unit) e)
+      <|> ( left_bracket >>* opt_nl
+          >>* expression *>> opt_nl *>> right_bracket
+          >>| fun e -> Expr.Boxed e )
       <|> literal_expression )
       (idx, callback)
 
