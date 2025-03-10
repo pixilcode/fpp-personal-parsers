@@ -1,0 +1,3 @@
+def main = addOne 1
+
+def addOne i = i + 1

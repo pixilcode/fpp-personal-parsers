@@ -1,0 +1,8 @@
+def main = fibList 45
+
+def fibList = fibList' 0 1
+
+def fibList' a b n =
+	match n to
+	| 0 -> b
+	| n -> b, fibList' b (a + b) (n - 1)
