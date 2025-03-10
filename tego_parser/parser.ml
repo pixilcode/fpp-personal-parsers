@@ -328,10 +328,12 @@ end = struct
       ~additional_msg:(idx |> Idx.sexp_of_t |> Sexp.to_string_hum)
       ( do_ >>* opt_nl >>* expression
       >>= (fun e1 ->
-      opt_nl >>* in_ >>* opt_nl >>* Match.pattern
+      opt (opt_nl >>* in_ >>* opt_nl >>* Match.pattern)
       >>= fun p ->
       opt_nl >>* then_ >>* opt_nl >>* expression
-      >>| fun e2 -> Expr.Do (e1, p, e2) )
+      >>| fun e2 ->
+      let p = Option.value ~default:Ast.Match.Ignore p in
+      Expr.Do (e1, p, e2) )
       <|> let_expression )
       (idx, callback)
 
@@ -498,6 +500,7 @@ end = struct
     let slash = slash >>* unit Expr.Divide in
     let modulo = modulo >>* unit Expr.Modulo in
     trace ~tag:"multiplicative_expression"
+      ~additional_msg:(idx |> Idx.sexp_of_t |> Sexp.to_string)
       (memoize_expression ~tag:"multiplicative_expression"
          ( opt
              ( multiplicative_expression
@@ -541,7 +544,7 @@ end = struct
     trace ~tag:"function_application_expression"
       ~additional_msg:(idx |> Idx.sexp_of_t |> Sexp.to_string)
       (memoize_expression ~tag:"function_application_expression"
-         ( opt function_application_expression
+         ( opt (function_application_expression *>> opt_nl)
          >>= fun e1 ->
          dot_expression
          >>| fun e2 ->
@@ -557,7 +560,7 @@ end = struct
          >>= fun e1 ->
          grouping_expression
          >>| fun e2 ->
-         match e1 with None -> e2 | Some e1 -> Expr.FnApp (e1, e2) ) )
+         match e1 with None -> e2 | Some e1 -> Expr.FnApp (e2, e1) ) )
       (idx, callback)
 
   and grouping_expression : Expr.t parser =
