@@ -627,14 +627,16 @@ end = struct
   module Prog = Ast.Prog
 
   let program : Prog.t parser =
-   fun (idx, callback) ->
-    ( memo ~tag:"program"
-        ( opt_nl
-        >>* many Declaration.declaration *>> opt_nl
-        >>| fun p -> CachedValue.ProgNode p )
-    >>| fun p ->
-    match p with CachedValue.ProgNode p -> p | _ -> failwith "unreachable" )
-      (idx, callback)
+    let decl_terminator = req_nl <|> opt_nl *>> end_of_input in
+    fun (idx, callback) ->
+      ( memo ~tag:"program"
+          ( opt_nl
+          >>* many (terminated Declaration.declaration decl_terminator)
+              *>> opt_nl
+          >>| fun p -> CachedValue.ProgNode p )
+      >>| fun p ->
+      match p with CachedValue.ProgNode p -> p | _ -> failwith "unreachable" )
+        (idx, callback)
 end
 
 let parse_match (input : string) : Ast.Match.t list =

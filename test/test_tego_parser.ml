@@ -667,11 +667,72 @@ module Test_expressions = struct
 end
 
 module Test_declaration = struct
-  let tests = "test_declaration" >::: []
+  let parse = Tego_parser.Parser.parse_declaration
+
+  let decl_list_to_string ds =
+    List.map ds ~f:(fun d -> Decl.sexp_of_t d |> Sexp.to_string_hum)
+    |> fun s -> "(" ^ String.concat ~sep:"; " s ^ ")"
+
+  let expression_declaration_test =
+    "expression_declaration_test"
+    >:: fun _ ->
+    let input = "def a = 1" in
+    let result = parse input in
+    let expected = [Decl.Expression ("a", Expr.Literal (Expr.Int 1))] in
+    assert_equal expected result ~printer:decl_list_to_string ;
+    let input = "def f x = x" in
+    let result = parse input in
+    let expected =
+      [Decl.Expression ("f", Expr.Fn (Match.Ident "x", Expr.Variable "x"))]
+    in
+    assert_equal expected result ~printer:decl_list_to_string ;
+    let input = "def f x y = x y" in
+    let result = parse input in
+    let expected =
+      [ Decl.Expression
+          ( "f"
+          , Expr.Fn
+              ( Match.Ident "x"
+              , Expr.Fn
+                  ( Match.Ident "y"
+                  , Expr.FnApp (Expr.Variable "x", Expr.Variable "y") ) ) ) ]
+    in
+    assert_equal expected result ~printer:decl_list_to_string
+
+  let tests = "test_declaration" >::: [expression_declaration_test]
 end
 
 module Test_program = struct
-  let tests = "test_program" >::: []
+  let parse = Tego_parser.Parser.parse_program
+
+  let program_list_to_string ps =
+    List.map ps ~f:(fun p -> Prog.sexp_of_t p |> Sexp.to_string_hum)
+    |> fun s -> "(" ^ String.concat ~sep:"; " s ^ ")"
+
+  let program_test =
+    "program_test"
+    >:: fun _ ->
+    let input = "def a = 1" in
+    let result = parse input in
+    let expected = [[Decl.Expression ("a", Expr.Literal (Expr.Int 1))]] in
+    assert_equal expected result ~printer:program_list_to_string ;
+    let input = "def a = 1 \n def b = 2" in
+    let result = parse input in
+    let expected =
+      [ [ Decl.Expression ("a", Expr.Literal (Expr.Int 1))
+        ; Decl.Expression ("b", Expr.Literal (Expr.Int 2)) ] ]
+    in
+    assert_equal expected result ~printer:program_list_to_string ;
+    let input = "def a = 1 \n def b = 2 \n def c = 3" in
+    let result = parse input in
+    let expected =
+      [ [ Decl.Expression ("a", Expr.Literal (Expr.Int 1))
+        ; Decl.Expression ("b", Expr.Literal (Expr.Int 2))
+        ; Decl.Expression ("c", Expr.Literal (Expr.Int 3)) ] ]
+    in
+    assert_equal expected result ~printer:program_list_to_string
+
+  let tests = "test_program" >::: [program_test]
 end
 
 let () =
