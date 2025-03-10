@@ -1,6 +1,6 @@
 open! Core
 
-(* let read_standard_input () : string = In_channel.input_all In_channel.stdin *)
+let read_standard_input () : string = In_channel.input_all In_channel.stdin
 
 let parse_expr (input : string) : unit =
   let result = Expr_parser.Parser.parse input in
@@ -29,7 +29,7 @@ let parse_tego (input : string) : unit =
           printf "%s\n" p )
 
 let parse (parser : string) (input : string option) : unit =
-  let input = match input with Some s -> s | None -> "" in
+  let input = match input with Some s -> s | None -> read_standard_input () in
   match parser with
   | "expr" ->
       parse_expr input
