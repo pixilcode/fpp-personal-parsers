@@ -1,0 +1,5 @@
+(library
+ (name tego_generator)
+ (preprocess
+  (pps ppx_jane))
+ (libraries core tego_parser))

@@ -8,3 +8,4 @@
 - need to have a single cached value that I convert to and from
 - an "error handler" just consumes the rest of the string, then returns an `Error`
   - however, requires ordered choice
+- can this framework be used to shorten parsing for "updates" to a string?
